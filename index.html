@@ -1,0 +1,441 @@
+<!doctype html><html lang="zh-Hant-TW"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow">
+<title>收藏君</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&family=Red+Hat+Display:wght@500;700;900&display=swap">
+<style>
+/* Layout: a wall of paper tickets on a dark ground. Ticket colour encodes recommendation, stamps and punch holes encode status, greyscale encodes "too old". Tap a ticket for the full boarding pass. */
+:root{
+  --ground:#131312; --ground-2:#1d1c1b; --rule:#2c2b29;
+  --paper:#E9E7E2; --paper-2:#DAD7D0; --ink:#161514; --ink-2:#55524C;
+  --verm:#E4572E; --verm-deep:#A8381A;
+  --on-ground:#E9E7E2; --on-ground-2:#8F8B84;
+  --serif:"Noto Serif TC","Songti TC",serif;
+  --sans:"Noto Sans TC",-apple-system,"PingFang TC",system-ui,sans-serif;
+  --num:"Red Hat Display","Noto Sans TC",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --r-ticket:18px; --r-art:12px;
+  --ease:cubic-bezier(.2,.75,.2,1);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--ground)}
+body{margin:0;background:var(--ground);color:var(--on-ground);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--ground)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--verm);outline-offset:3px}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* ---------- masthead ---------- */
+.mast{display:grid;grid-template-columns:1fr auto;align-items:end;gap:20px 40px;padding-block:36px 26px}
+.mast h1{font-family:var(--serif);font-weight:900;font-size:clamp(56px,10vw,128px);line-height:.92;letter-spacing:-.02em;margin:0;color:var(--paper)}
+.mast h1 .dot{display:inline-block;width:.22em;height:.22em;border-radius:50%;background:var(--verm);margin-left:.08em;vertical-align:.12em}
+.mast p{margin:14px 0 0;color:var(--on-ground-2);max-width:34ch}
+.pass{display:grid;grid-template-columns:repeat(4,auto);gap:4px 28px;margin:0}
+.pass div{display:grid;gap:2px}
+.pass dt{font-size:12px;color:var(--on-ground-2)}
+.pass dd{margin:0;font-family:var(--num);font-weight:700;font-size:30px;line-height:1;font-variant-numeric:tabular-nums;color:var(--paper)}
+.pass .hot dd{color:var(--verm)}
+.sample{font-family:var(--mono);font-size:12px;color:var(--on-ground-2);border-top:1px dashed var(--rule);padding-top:10px;margin-top:6px;grid-column:1/-1}
+
+/* ---------- controls ---------- */
+.ctl{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--ground);padding-block:10px 12px;display:grid;gap:10px}
+.band{display:flex;align-items:stretch;background:var(--paper);color:var(--ink);border-radius:999px;padding:4px;overflow-x:auto;scrollbar-width:none;gap:2px}
+.band::-webkit-scrollbar{display:none}
+.band button{flex:0 0 auto;border:0;background:transparent;border-radius:999px;padding:7px 14px;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:7px;white-space:nowrap;transition:background-color .2s var(--ease),color .2s var(--ease)}
+.band button:hover{background:var(--paper-2)}
+.band button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.band button[data-v="rec"][aria-pressed="true"]{background:var(--verm);color:var(--ink)}
+.band b{font-family:var(--num);font-weight:700;font-size:12px;opacity:.6;font-variant-numeric:tabular-nums}
+.row{display:flex;gap:10px 18px;align-items:center;flex-wrap:wrap}
+.search{flex:1 1 260px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #4a4844;padding:4px 2px 8px;min-width:0}
+.search:focus-within{border-color:var(--paper)}
+.search svg{flex:none;opacity:.6}
+.search input{flex:1;min-width:0;background:transparent;border:0;outline:none;color:var(--paper);font:inherit;font-size:15px}
+.search input::placeholder{color:var(--on-ground-2)}
+.pf-tog{display:flex;gap:4px}
+.pf-tog button{border:1px solid #3a3936;background:transparent;border-radius:999px;padding:4px 11px;font-size:13px;color:var(--on-ground-2);cursor:pointer;transition:all .2s var(--ease)}
+.pf-tog button:hover{color:var(--paper);border-color:#5a5853}
+.pf-tog button[aria-pressed="true"]{color:var(--ink);background:var(--paper);border-color:var(--paper)}
+.topics{display:flex;gap:22px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.topics::-webkit-scrollbar{display:none}
+.topics button{flex:none;border:0;background:none;padding:2px 0 6px;font-size:14px;color:var(--on-ground-2);cursor:pointer;border-bottom:2px solid transparent;transition:color .2s var(--ease),border-color .2s var(--ease)}
+.topics button:hover{color:var(--paper)}
+.topics button[aria-pressed="true"]{color:var(--paper);border-color:var(--verm)}
+
+/* ---------- wall ---------- */
+.wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:28px 22px;align-items:start;padding-block:18px 80px}
+@media (max-width:560px){.wall{grid-template-columns:1fr 1fr;gap:18px 12px}}
+.empty{grid-column:1/-1;color:var(--on-ground-2);padding:60px 0;text-align:center}
+
+.tk{--bg:var(--paper);--fg:var(--ink);--fg2:var(--ink-2);--dot:var(--verm);
+  position:relative;background:var(--bg);color:var(--fg);border-radius:var(--r-ticket);padding:10px 10px 0;cursor:pointer;
+  transition:transform .35s var(--ease),box-shadow .35s var(--ease);box-shadow:0 1px 0 rgba(0,0,0,.4);isolation:isolate}
+.tk::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:3;opacity:.09;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.tk:hover{transform:translateY(-4px) rotate(-.4deg);box-shadow:0 18px 30px -18px rgba(0,0,0,.9)}
+.tk:active{transform:translateY(-1px) scale(.99)}
+.tk.rec{--bg:var(--verm);--fg:var(--ink);--fg2:#2a1208;--dot:var(--paper)}
+.tk.old{--bg:#C9C6BF;--dot:#7d7a74}
+.tk.old .art img{filter:grayscale(1) contrast(1.05)}
+.tk.drop{--bg:#8f8c86;--fg2:#1f1e1c}
+.tk.drop .art img{filter:grayscale(1) brightness(.75)}
+
+.art{position:relative;border-radius:var(--r-art);aspect-ratio:3/4;background:var(--ground-2)}
+.art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block}
+.punch{position:absolute;bottom:-13px;left:var(--x,62%);width:26px;height:26px;margin-left:-13px;border-radius:50%;background:var(--dot);z-index:2}
+.tk.tried .punch{background:var(--ground);box-shadow:inset 0 2px 3px rgba(0,0,0,.6)}
+.stamp{position:absolute;top:12px;right:10px;z-index:2;transform:rotate(-9deg);font-family:var(--sans);font-weight:700;font-size:15px;letter-spacing:.2em;padding:3px 7px 3px 10px;border:2px solid currentColor;border-radius:4px;color:var(--verm-deep);background:rgba(233,231,226,.9)}
+.stamp.void{color:var(--ink);background:rgba(233,231,226,.8)}
+.tk.rec .stamp{color:var(--ink)}
+
+.quote{position:absolute;inset:0;border-radius:inherit;background:var(--paper-2);color:var(--ink);padding:52px 34px 18px 14px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+.tk.rec .quote{background:#F0EEE9}
+.quote .q{margin:0;font-family:var(--mono);font-size:13px;line-height:1.5;text-wrap:pretty;display:-webkit-box;-webkit-line-clamp:10;-webkit-box-orient:vertical;overflow:hidden}
+.quote .vert{position:absolute;top:14px;right:10px;writing-mode:vertical-rl;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--ink-2)}
+.quote .big{position:absolute;top:12px;left:14px;font-family:var(--serif);font-weight:900;font-size:30px;line-height:1}
+
+.date{display:grid;grid-template-columns:auto 1fr auto;align-items:end;gap:8px;margin:24px 4px 0;font-family:var(--num);font-weight:500;font-variant-numeric:tabular-nums}
+.date .d,.date .m{font-size:28px;line-height:.9}
+.date i{height:1px;background:currentColor;opacity:.55;margin-bottom:9px}
+.date small{grid-column:3;justify-self:end;font-size:11px;opacity:.7;margin-top:-2px}
+.title{font-family:var(--serif);font-weight:900;font-size:23px;line-height:1.18;letter-spacing:-.01em;margin:8px 4px 0;text-wrap:balance;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+@media (max-width:560px){.title{font-size:18px}.date .d,.date .m{font-size:22px}.date{margin-top:20px}}
+
+.perf{position:relative;height:24px;margin:10px -10px 0}
+.perf::before{content:"";position:absolute;left:16px;right:16px;top:50%;border-top:2px dotted currentColor;opacity:.75}
+.perf::after,.perf b{content:"";position:absolute;top:50%;width:20px;height:20px;margin-top:-10px;border-radius:50%;background:var(--ground)}
+.perf::after{right:-10px}
+.perf b{left:-10px}
+.stub{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;padding:2px 4px 12px}
+.stub .who{display:grid;gap:1px;min-width:0;overflow:hidden}
+.stub .pf{display:flex;align-items:center;gap:6px;font-family:var(--num);font-weight:700;font-size:13px;letter-spacing:.06em;white-space:nowrap;min-width:0;overflow:hidden}
+.stub .pf::before{content:"";width:9px;height:9px;border-radius:50%;background:currentColor;flex:none}
+.stub .meta{font-size:11.5px;color:var(--fg2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar{display:block;color:var(--fg);line-height:0}
+.bar svg{height:30px;width:auto;max-width:96px;display:block}
+@media (max-width:560px){.bar svg{height:22px;max-width:54px}.stub .pf{font-size:12px;letter-spacing:.02em}.quote{padding:40px 24px 12px 11px}.quote .q{font-size:11px;-webkit-line-clamp:8}.quote .vert{font-size:9px;right:6px}.quote .big{font-size:24px}}
+
+/* ---------- boarding pass sheet ---------- */
+.scrim{position:fixed;inset:0;z-index:40;background:rgba(10,10,9,.72);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);opacity:0;transition:opacity .25s var(--ease)}
+.scrim.on{opacity:1}
+.sheet{position:fixed;z-index:41;left:50%;top:50%;width:min(920px,calc(100vw - 32px));max-height:calc(100dvh - 48px);overflow:auto;transform:translate(-50%,-46%);opacity:0;transition:transform .32s var(--ease),opacity .25s var(--ease);
+  background:var(--paper);color:var(--ink);border-radius:22px;display:grid;grid-template-columns:minmax(0,380px) 34px minmax(0,1fr)}
+.sheet.on{transform:translate(-50%,-50%);opacity:1}
+.sheet.rec .s-art-wrap{background:var(--verm)}
+.s-art-wrap{padding:14px;background:var(--paper-2);border-radius:22px 0 0 22px}
+.s-art{position:relative;aspect-ratio:3/4;border-radius:14px;overflow:hidden;background:var(--ground-2)}
+.s-art img{width:100%;height:100%;object-fit:cover;display:block}
+.sheet.old .s-art img{filter:grayscale(1)}
+.s-art .quote{border-radius:0}
+.vperf{position:relative}
+.vperf::before{content:"";position:absolute;top:22px;bottom:22px;left:50%;border-left:2px dotted var(--ink);opacity:.5}
+.vperf::after,.vperf b{content:"";position:absolute;left:50%;width:26px;height:26px;margin-left:-13px;border-radius:50%;background:var(--ground)}
+.vperf::after{bottom:-13px}.vperf b{top:-13px}
+.s-body{padding:26px 26px 22px 10px;display:grid;gap:18px;align-content:start;min-width:0}
+.s-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.s-kicker{font-family:var(--num);font-weight:700;font-size:13px;letter-spacing:.08em;display:flex;gap:8px;align-items:center}
+.s-kicker .rk{background:var(--verm);color:var(--ink);border-radius:999px;padding:2px 9px}
+.close{border:0;background:var(--paper-2);width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:18px;line-height:1;flex:none;transition:background-color .2s}
+.close:hover{background:#cfccc4}
+.s-title{font-family:var(--serif);font-weight:900;font-size:clamp(26px,3.2vw,36px);line-height:1.15;margin:0;text-wrap:balance}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 16px;margin:0}
+.grid div{min-width:0}
+.grid dt{font-size:12px;color:var(--ink-2)}
+.grid dd{margin:0;font-family:var(--num);font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.why{border-left:4px solid var(--verm);background:#F3E2DA;padding:10px 14px;border-radius:0 10px 10px 0}
+.why b{display:block;font-size:12px;color:var(--verm-deep);margin-bottom:2px}
+.sum{margin:0;max-width:60ch}
+.tags{font-family:var(--mono);font-size:12px;color:var(--ink-2);display:flex;gap:4px 12px;flex-wrap:wrap}
+.tags span::before{content:"#"}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--paper-2);padding:5px;border-radius:999px}
+.seg button{border:0;background:transparent;border-radius:999px;padding:9px 0;font-weight:700;cursor:pointer;transition:background-color .2s var(--ease),color .2s var(--ease),transform .15s}
+.seg button:hover{background:#cfccc4}
+.seg button:active{transform:scale(.97)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.seg button[data-s="tried"][aria-pressed="true"]{background:var(--verm);color:var(--ink)}
+.note label{display:block;font-size:12px;color:var(--ink-2);margin-bottom:4px}
+.note textarea{width:100%;min-height:62px;resize:vertical;border:1px solid #c4c0b8;border-radius:10px;background:#F2F0EC;color:var(--ink);font:inherit;font-size:14px;padding:8px 10px}
+.note textarea:focus{outline:none;border-color:var(--ink)}
+.open{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:6px 16px;text-decoration:none;color:var(--ink);border-top:2px dotted rgba(22,21,20,.45);padding-top:16px}
+.open svg{height:46px;width:auto;grid-row:span 2}
+.open strong{font-size:15px}
+.open span{font-family:var(--mono);font-size:11px;color:var(--ink-2);letter-spacing:.12em}
+.open:hover strong{text-decoration:underline;text-decoration-color:var(--verm);text-underline-offset:4px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);z-index:50;background:var(--paper);color:var(--ink);font-size:13px;padding:8px 14px;border-radius:999px;opacity:0;transition:all .25s var(--ease);pointer-events:none}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width:760px){
+  .mast{grid-template-columns:1fr}
+  .pass{grid-template-columns:repeat(4,auto);justify-content:start;gap:4px 22px}
+  .pass dd{font-size:24px}
+  .sheet{left:0;right:0;top:auto;bottom:0;width:100%;max-height:92dvh;transform:translateY(100%);opacity:1;border-radius:22px 22px 0 0;grid-template-columns:1fr;padding-bottom:env(safe-area-inset-bottom,0px)}
+  .sheet.on{transform:translateY(0)}
+  .s-art-wrap{border-radius:22px 22px 0 0;padding:12px 12px 0}
+  .s-art{aspect-ratio:4/3}
+  .s-art img{object-position:50% 22%}
+  .vperf{height:30px}
+  .vperf::before{top:50%;bottom:auto;left:18px;right:18px;border-left:0;border-top:2px dotted var(--ink)}
+  .vperf::after,.vperf b{top:50%;margin-top:-13px;left:auto}
+  .vperf b{left:-13px;margin-left:0}.vperf::after{right:-13px;bottom:auto}
+  .s-body{padding:6px 18px 22px}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+</style>
+
+</head><body>
+<style>
+/* production additions: skeletons, also-see tickets, load notes */
+.sk{border-radius:var(--r-ticket);background:var(--ground-2);padding:10px;display:grid;gap:12px}
+.sk i{display:block;border-radius:10px;background:linear-gradient(90deg,#222120 25%,#2c2b29 50%,#222120 75%);background-size:200% 100%;animation:sh 1.4s linear infinite}
+.sk i:nth-child(1){aspect-ratio:3/4;border-radius:var(--r-art)}.sk i:nth-child(2){height:24px;width:70%}.sk i:nth-child(3){height:20px;width:90%}.sk i:nth-child(4){height:30px;width:55%;margin-bottom:6px}
+@keyframes sh{to{background-position:-200% 0}}
+.tk.also .stub .meta{color:var(--verm-deep);font-weight:700}
+.note-line{grid-column:1/-1;color:var(--on-ground-2);font-size:13px;padding:40px 0;text-align:center;max-width:46ch;justify-self:center}
+.tokbox{border:1px dashed #b9b4ab;border-radius:12px;padding:10px 12px;display:grid;gap:6px}
+.tokbox label{font-size:12px;color:var(--ink-2)}
+.tokbox div{display:flex;gap:8px}
+.tokbox input{flex:1;min-width:0;border:1px solid #c4c0b8;border-radius:999px;background:#F2F0EC;color:var(--ink);font:13px var(--mono);padding:8px 12px}
+.tokbox input:focus{outline:none;border-color:var(--ink)}
+.tokbox button{border:0;border-radius:999px;background:var(--ink);color:var(--paper);font:inherit;font-size:13px;font-weight:700;padding:8px 16px;cursor:pointer}
+</style>
+
+<div class="wrap">
+  <header class="mast">
+    <div>
+      <h1>收藏君<span class="dot" aria-hidden="true"></span></h1>
+      <p>手機上收藏的技巧與工具。點一張票看完整內容，試過就剪票。</p>
+    </div>
+    <dl class="pass" id="pass"></dl>
+  </header>
+
+  <div class="ctl">
+    <div class="band" id="band" role="group" aria-label="狀態"></div>
+    <div class="row">
+      <label class="search"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M11 11l3.6 3.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="搜標題、作者、標籤、備註" autocomplete="off"></label>
+      <div class="pf-tog" id="pfs" role="group" aria-label="平台"></div>
+    </div>
+    <div class="topics" id="topics" role="group" aria-label="主題"></div>
+  </div>
+
+  <main class="wall" id="wall" aria-busy="true">
+    <div class="sk" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <div class="sk" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <div class="sk" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <div class="sk" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+  </main>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="s-title" hidden></section>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+  const PF={ig:"Instagram",th:"Threads",dy:"抖音"};
+  const TOPICS=["Skill 與開源工具","AI 影片","AI 生圖提示詞","平面設計","剪輯","其他"];
+  const ST={want:"想試",tried:"已試",drop:"沒用"};
+  const $=s=>document.querySelector(s);
+  const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  // 過舊：發布日期超過 3 個月，依今天日期自動判斷
+  const CUT=(()=>{const d=new Date();d.setMonth(d.getMonth()-3);return d.toISOString().slice(0,10);})();
+  const isOld=it=>!!it.date&&it.date<CUT;
+  const short=t=>String(t||"").split(/[：（(]/)[0].trim();
+  const img=it=>it.cover?`c/${it.id}.webp`:"";
+  let ITEMS=[], canWrite=true, loaded=false, STATE={};
+  // ---------- GitHub storage ----------
+  const meta=document.querySelector('meta[name="scj-repo"]');
+  const REPO=(meta&&meta.content)||(()=>{const h=location.hostname;if(!h.endsWith(".github.io"))return "";const o=h.split(".")[0];const r=location.pathname.split("/").filter(Boolean)[0];return o+"/"+(r||h);})();
+  const STATE_PATH="data/state.json";
+  const getTok=()=>{try{return localStorage.getItem("scj.gh")||"";}catch(e){return "";}};
+  const setTok=t=>{try{t?localStorage.setItem("scj.gh",t):localStorage.removeItem("scj.gh");}catch(e){}};
+  const b64dec=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g,"")),c=>c.charCodeAt(0)));
+  const b64enc=s=>{const u=new TextEncoder().encode(s);let b="";for(let i=0;i<u.length;i+=0x8000)b+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(b);};
+  async function gh(path,opt={}){
+    const r=await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`,Object.assign({cache:"no-store"},opt,{headers:Object.assign({"Accept":"application/vnd.github+json","Authorization":"Bearer "+getTok()},opt.headers||{})}));
+    if(!r.ok){const e=new Error("gh "+r.status);e.status=r.status;throw e;}
+    return r.json();
+  }
+  async function readState(){const j=await gh(STATE_PATH);return {sha:j.sha,data:JSON.parse(b64dec(j.content)||"{}")};}
+  let chain=Promise.resolve();
+  function writeState(id,patch){
+    const run=async()=>{
+      for(let n=0;n<3;n++){
+        const cur=await readState();
+        const rec=Object.assign({},cur.data[id]||{},patch,{updatedAt:new Date().toISOString()});
+        if((!rec.status||rec.status==="new")&&!rec.note) delete cur.data[id]; else cur.data[id]=rec;
+        try{ await gh(STATE_PATH,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:`狀態：${id}`,content:b64enc(JSON.stringify(cur.data,null,1)+"\n"),sha:cur.sha})}); return; }
+        catch(e){ if(e.status!==409&&e.status!==422) throw e; }
+      }
+      throw new Error("conflict");
+    };
+    const p=chain.then(run,run); chain=p.catch(()=>{}); return p;
+  }
+  const f={status:"all",topic:"all",pf:"all",q:""};
+  try{Object.assign(f,JSON.parse(localStorage.getItem("scj.f")||"{}"));f.q="";}catch(e){}
+  const keep=()=>{try{localStorage.setItem("scj.f",JSON.stringify({status:f.status,topic:f.topic,pf:f.pf}));}catch(e){}};
+
+  function hash(s){let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}
+  function barcode(id,h){let r=hash(id),x=0,bars="";for(let i=0;i<34;i++){r=Math.imul(r^(r>>>13),1274126177)>>>0;const w=1+(r%3),g=1+((r>>>4)%2);if(i%2===0||w>1)bars+=`<rect x="${x}" width="${w}" height="${h}"/>`;x+=w+g;}return `<svg viewBox="0 0 ${x} ${h}" fill="currentColor" aria-hidden="true" preserveAspectRatio="none" style="aspect-ratio:${x}/${h}">${bars}</svg>`;}
+  function digits(id){const n=String(id).replace(/\D/g,"").padEnd(13,"7").slice(-13);return n.slice(0,1)+" "+n.slice(1,7)+" "+n.slice(7);}
+  function dateParts(d){const [y,m,dd]=(d||"----").split("-");return {y,m,d:dd};}
+  const quoteBox=(it,vert)=>`<div class="quote"><span class="big" aria-hidden="true">“</span><span class="vert">${esc(it.author)}${vert?" / "+esc((it.date||"").replace(/-/g,".")):""}</span><p class="q">${esc(it.quote||it.summary)}</p></div>`;
+
+  function art(it){
+    const st=it.status||"new";
+    const stamp=st==="tried"?`<span class="stamp">已試</span>`:st==="drop"?`<span class="stamp void">沒用</span>`:"";
+    const x=30+hash(it.id)%45;
+    const inner=img(it)?`<img src="${img(it)}" alt="${esc(short(it.title))} 的封面" loading="lazy" decoding="async">`:quoteBox(it,true);
+    return `<div class="art">${inner}${stamp}<span class="punch" style="--x:${x}%"></span></div>`;
+  }
+  function ticket(it){
+    const st=it.status||"new", dp=dateParts(it.date);
+    const cls=["tk",it.rec===1?"rec":"",it.rec===2?"also":"",isOld(it)?"old":"",st].join(" ");
+    const meta=it.rec===1?`推薦 No.${String(it.recRank||"").padStart(2,"0")}`:it.rec===2?"也可以看看":(ST[st]||it.topic);
+    const el=document.createElement("article");
+    el.className=cls; el.tabIndex=0; el.setAttribute("role","button"); el.dataset.id=it.id;
+    el.setAttribute("aria-label",`${short(it.title)}，${PF[it.platform]||""}，${it.date||""}`);
+    el.innerHTML=`${art(it)}
+      <div class="date" aria-hidden="true"><span class="d">${dp.d}</span><i></i><span class="m">${dp.m}</span><small>${dp.y}</small></div>
+      <h2 class="title">${esc(short(it.title))}</h2>
+      <div class="perf" aria-hidden="true"><b></b></div>
+      <div class="stub"><div class="who"><span class="pf">${PF[it.platform]||""}</span><span class="meta">${esc(meta)}</span></div>
+      <a class="bar" href="${esc(it.url)}" target="_blank" rel="noopener" aria-label="打開原文">${barcode(it.id,30)}</a></div>`;
+    el.querySelector(".bar").addEventListener("click",e=>e.stopPropagation());
+    el.addEventListener("click",()=>openSheet(it.id,el));
+    el.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openSheet(it.id,el);}});
+    return el;
+  }
+
+  function matches(it){
+    const st=it.status||"new";
+    if(f.status==="old"){ if(!isOld(it)) return false; }
+    else if(isOld(it)) return false;
+    else if(f.status==="rec"){ if(!it.rec) return false; }
+    else if(f.status!=="all" && st!==f.status) return false;
+    if(f.topic!=="all"&&it.topic!==f.topic) return false;
+    if(f.pf!=="all"&&it.platform!==f.pf) return false;
+    if(f.q){const hay=[it.title,it.summary,it.author,(it.tags||[]).join(" "),it.note,it.quote].join(" ").toLowerCase();if(!f.q.toLowerCase().split(/\s+/).every(w=>hay.includes(w)))return false;}
+    return true;
+  }
+  function counts(){
+    const c={all:0,rec:0,want:0,tried:0,drop:0,new:0,old:0};
+    ITEMS.forEach(it=>{if(isOld(it)){c.old++;return;}c.all++;const st=it.status||"new";if(c[st]!=null)c[st]++;if(it.rec)c.rec++;});
+    return c;
+  }
+  const BAND=[["all","全部"],["rec","推薦"],["want","想試"],["tried","已試"],["drop","沒用"],["new","未標"],["old","過舊"]];
+  function renderBand(){
+    const c=counts();
+    $("#band").innerHTML=BAND.map(([v,l])=>`<button type="button" data-v="${v}" aria-pressed="${f.status===v}">${l}<b>${loaded?c[v]:""}</b></button>`).join("");
+    $("#pass").innerHTML=loaded?[["持票",c.all],["推薦",c.rec,"hot"],["已試",c.tried],["過舊",c.old]].map(([l,n,h])=>`<div class="${h||""}"><dt>${l}</dt><dd>${n}</dd></div>`).join(""):"";
+  }
+  $("#band").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;f.status=b.dataset.v;keep();renderBand();render();});
+  const pfBtns=()=>$("#pfs").innerHTML=[["all","全部"],["ig","IG"],["th","Threads"],["dy","抖音"]].map(([v,l])=>`<button type="button" data-v="${v}" aria-pressed="${f.pf===v}">${l}</button>`).join("");
+  pfBtns();
+  $("#pfs").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;f.pf=b.dataset.v;keep();pfBtns();render();});
+  const tpBtns=()=>$("#topics").innerHTML=[["all","全部主題"],...TOPICS.map(t=>[t,t])].map(([v,l])=>`<button type="button" data-v="${esc(v)}" aria-pressed="${f.topic===v}">${l}</button>`).join("");
+  tpBtns();
+  $("#topics").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;f.topic=b.dataset.v;keep();tpBtns();render();});
+  let qt;$("#q").addEventListener("input",e=>{clearTimeout(qt);qt=setTimeout(()=>{f.q=e.target.value.trim();render();},120);});
+
+  function render(){
+    const wall=$("#wall"); wall.removeAttribute("aria-busy");
+    const byDate=(a,b)=>(b.date||"").localeCompare(a.date||"")||(a.id<b.id?1:-1);
+    const sorter=f.status==="rec"?(a,b)=>((a.rec||9)-(b.rec||9))||((a.recRank||99)-(b.recRank||99))||byDate(a,b):byDate;
+    const vis=ITEMS.filter(matches).sort(sorter);
+    if(!vis.length){wall.innerHTML=`<p class="note-line">${ITEMS.length?"這一格沒有票。換個篩選，或清掉搜尋字。":"還沒有收藏。回到 Claude 說「整理收藏君」，整理好的收藏就會變成票出現在這裡。"}</p>`;return;}
+    wall.replaceChildren(...vis.map(ticket));
+  }
+  function note(msg){const wall=$("#wall");wall.removeAttribute("aria-busy");wall.innerHTML=`<p class="note-line">${msg}</p>`;}
+
+  // ---------- sheet ----------
+  const sheet=$("#sheet"), scrim=$("#scrim"); let lastFocus=null, curId=null;
+  const byId=id=>ITEMS.find(x=>x.id===id);
+  function openSheet(id,from){
+    const it=byId(id); if(!it) return;
+    curId=id; lastFocus=from||document.activeElement;
+    const st=it.status||"new";
+    sheet.className="sheet"+(it.rec===1?" rec":"")+(isOld(it)?" old":"");
+    sheet.innerHTML=`
+      <div class="s-art-wrap"><div class="s-art">${img(it)?`<img src="${img(it)}" alt="${esc(short(it.title))} 的封面">`:quoteBox(it,false)}</div></div>
+      <div class="vperf" aria-hidden="true"><b></b></div>
+      <div class="s-body">
+        <div class="s-top"><div class="s-kicker">${PF[it.platform]||""}${it.rec===1?`<span class="rk">推薦 No.${String(it.recRank||"").padStart(2,"0")}</span>`:""}${isOld(it)?`<span>過舊</span>`:""}</div><button class="close" type="button" aria-label="關閉">×</button></div>
+        <h2 class="s-title" id="s-title">${esc(it.title)}</h2>
+        <dl class="grid">
+          <div><dt>作者</dt><dd>${esc(it.author)}</dd></div>
+          <div><dt>主題</dt><dd>${esc(it.topic)}</dd></div>
+          <div><dt>發布</dt><dd>${esc((it.date||"").replace(/-/g,"."))}</dd></div>
+        </dl>
+        ${it.rec&&it.recReason?`<div class="why"><b>${it.rec===1?"為什麼推薦":"也可以看看"}</b>${esc(it.recReason)}</div>`:""}
+        <p class="sum">${esc(it.summary)}</p>
+        ${(it.tags||[]).length?`<div class="tags">${it.tags.map(t=>`<span>${esc(t)}</span>`).join("")}</div>`:""}
+        <div class="seg" role="group" aria-label="狀態">${Object.entries(ST).map(([k,v])=>`<button type="button" data-s="${k}" aria-pressed="${st===k}" ${canWrite?"":"disabled"}>${v}</button>`).join("")}</div>
+        <div class="note"><label for="note-in">備註</label><textarea id="note-in" placeholder="例如：做邵氏短片的打鬥場時用" ${canWrite?"":"disabled"}>${esc(it.note||"")}</textarea></div>
+        ${getTok()?"":`<div class="tokbox"><label for="tok-in">這台裝置第一次標記，請貼上 GitHub 存取碼（只存在這台的瀏覽器）</label><div><input id="tok-in" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…"><button type="button" id="tok-ok">儲存</button></div></div>`}
+        <a class="open" href="${esc(it.url)}" target="_blank" rel="noopener">${barcode(it.id,46)}<strong>打開原文 ↗</strong><span>${digits(it.id)}</span></a>
+      </div>`;
+    sheet.querySelector(".close").addEventListener("click",closeSheet);
+    sheet.querySelectorAll("[data-s]").forEach(b=>b.addEventListener("click",()=>{
+      const next=(it.status||"new")===b.dataset.s?"new":b.dataset.s;
+      sheet.querySelectorAll("[data-s]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.s===next)));
+      save(it,{status:next},next==="new"?"已清除標記":`已標為「${ST[next]}」`);
+    }));
+    const tokOk=sheet.querySelector("#tok-ok");
+    if(tokOk) tokOk.addEventListener("click",async()=>{
+      const v=sheet.querySelector("#tok-in").value.trim(); if(!v) return;
+      setTok(v);
+      try{ await readState(); toast("存取碼可以用了"); sheet.querySelector(".tokbox").remove(); }
+      catch(e){ setTok(""); toast(e.status===401||e.status===403||e.status===404?"這組存取碼讀不到這個 repo，請再確認":"連不上 GitHub，請稍後再試"); }
+    });
+    const ta=sheet.querySelector("textarea");
+    ta.addEventListener("blur",()=>{const v=ta.value.trim();if((it.note||"")!==v) save(it,{note:v},"備註已存");});
+    scrim.hidden=false; sheet.hidden=false;
+    requestAnimationFrame(()=>{scrim.classList.add("on");sheet.classList.add("on");});
+    sheet.querySelector(".close").focus({preventScroll:true});
+    document.body.style.overflow="hidden";
+  }
+  function closeSheet(){
+    if(sheet.hidden) return;
+    const ta=sheet.querySelector("textarea"); if(ta&&document.activeElement===ta) ta.blur();
+    scrim.classList.remove("on"); sheet.classList.remove("on"); document.body.style.overflow="";
+    setTimeout(()=>{scrim.hidden=true;sheet.hidden=true;sheet.innerHTML="";},300);
+    const t=document.querySelector(`.tk[data-id="${curId}"]`)||lastFocus; t&&document.contains(t)&&t.focus({preventScroll:true});
+    curId=null;
+  }
+  scrim.addEventListener("click",closeSheet);
+  document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSheet();});
+  const tEl=$("#toast"); function toast(t){tEl.textContent=t;tEl.classList.add("on");clearTimeout(toast.h);toast.h=setTimeout(()=>tEl.classList.remove("on"),1700);}
+
+  const busy=new Set();
+  async function save(it,patch,okMsg){
+    if(!REPO){toast("找不到 GitHub repo，請從 github.io 網址打開");return;}
+    if(!getTok()){const t=sheet.querySelector("#tok-in");t&&t.focus();toast("先貼上 GitHub 存取碼才能存");
+      sheet.querySelectorAll("[data-s]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.s===(it.status||"new"))));return;}
+    if(busy.has(it.id)) return; busy.add(it.id);
+    const prev={status:it.status,note:it.note}; Object.assign(it,patch); renderBand(); render();
+    try{ await writeState(it.id,patch); toast(okMsg); }
+    catch(e){ Object.assign(it,prev); renderBand(); render();
+      if(e.status===401||e.status===403){toast("存取碼失效了，請重新貼一次");setTok("");}
+      else toast("沒存成功，請再試一次"); }
+    finally{ busy.delete(it.id); }
+  }
+
+  // ---------- data ----------
+  renderBand();
+  async function loadState(){
+    if(getTok()&&REPO){try{return (await readState()).data;}catch(e){if(e.status===401||e.status===403)setTok("");}}
+    try{const r=await fetch(STATE_PATH+"?v="+Date.now(),{cache:"no-store"});return r.ok?await r.json():{};}catch(e){return {};}
+  }
+  function merge(){ITEMS.forEach(it=>{const s=STATE[it.id]||{};it.status=s.status||"new";it.note=s.note||"";});}
+  (async()=>{
+    try{
+      const [items,state]=await Promise.all([fetch("data/items.json?v="+Date.now(),{cache:"no-store"}).then(r=>{if(!r.ok)throw new Error(r.status);return r.json();}),loadState()]);
+      ITEMS=items; STATE=state; merge(); loaded=true; renderBand(); render();
+    }catch(e){ note("讀不到收藏資料，請重新整理一次。"); }
+  })();
+  // 回到這個分頁時，同步其他裝置改過的狀態
+  document.addEventListener("visibilitychange",async()=>{ if(document.visibilityState!=="visible"||!loaded||!sheet.hidden) return; STATE=await loadState(); merge(); renderBand(); render(); });
+})();
+</script>
+</body></html>
